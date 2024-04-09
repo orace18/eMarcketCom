@@ -7,8 +7,6 @@ void main() {
 }
 
 class MainApp extends StatelessWidget {
-  //const MainApp({Key key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -23,8 +21,7 @@ class LocationUpdates extends StatefulWidget {
 }
 
 class _LocationUpdatesState extends State<LocationUpdates> {
-  // Déclaration de la connexion WebSocket
-  final channel = IOWebSocketChannel.connect('ws://192.168.0.107:5000');
+  final channel = IOWebSocketChannel.connect('ws://192.168.0.103:7878');
 
   @override
   void dispose() {
@@ -40,8 +37,13 @@ class _LocationUpdatesState extends State<LocationUpdates> {
 
   void _initLocationUpdates() async {
     Geolocator.getPositionStream().listen((Position position) {
-      // Envoie les données de localisation au backend sous forme de chaîne JSON
-      channel.sink.add('{"latitude": ${position.latitude}, "longitude": ${position.longitude}}');
+      // Envoie les données de localisation au backend sous forme d'un objet JSON
+      final Map<String, dynamic> data = {
+        'longitude': position.longitude,
+        'latitude': position.latitude,
+      };
+     // print(data);
+      channel.sink.add(data.toString());
     });
   }
 
@@ -57,6 +59,7 @@ class _LocationUpdatesState extends State<LocationUpdates> {
     );
   }
 }
+
 
 /* 
 import 'dart:async';
