@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:socket_app/constantes.dart';
+import 'package:web_socket_channel/web_socket_channel.dart'; 
 
 void main() {
   runApp(MainApp());
@@ -21,7 +23,8 @@ class LocationUpdates extends StatefulWidget {
 }
 
 class _LocationUpdatesState extends State<LocationUpdates> {
-  final channel = IOWebSocketChannel.connect('ws://192.168.0.103:7878');
+  final WebSocketChannel channel = WebSocketChannel.connect(
+      Uri.parse('ws://$baseUrl/')); // Assurez-vous que la variable baseUrl est correctement définie
 
   @override
   void dispose() {
@@ -32,18 +35,45 @@ class _LocationUpdatesState extends State<LocationUpdates> {
   @override
   void initState() {
     super.initState();
-    _initLocationUpdates();
+    _checkLocationPermission();
+  }
+
+  void _checkLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Permission Required"),
+            content: Text("This app requires access to your location."),
+            actions: [
+              ElevatedButton(
+                child: Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Si l'autorisation est accordée, initialisez la surveillance de la position
+      _initLocationUpdates();
+    }
   }
 
   void _initLocationUpdates() async {
     Geolocator.getPositionStream().listen((Position position) {
       // Envoie les données de localisation au backend sous forme d'un objet JSON
       final Map<String, dynamic> data = {
+        'userId': '1', // Remplacez '123' par l'ID de l'utilisateur
         'longitude': position.longitude,
         'latitude': position.latitude,
       };
-     // print(data);
-      channel.sink.add(data.toString());
+      channel.sink.add(jsonEncode(data));
     });
   }
 
